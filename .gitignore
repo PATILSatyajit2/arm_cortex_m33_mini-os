@@ -1,0 +1,6 @@
+*.o
+*.out
+*.dbo
+*.swd
+*.elf
+*.map

@@ -1,0 +1,337 @@
+
+Discarded input sections
+
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .group         0x00000000        0xc build/main.o
+ .text          0x00000000        0x0 build/main.o
+ .data          0x00000000        0x0 build/main.o
+ .text.Task2    0x00000000       0x24 build/main.o
+ .group         0x00000000        0xc build/cfg.o
+ .group         0x00000000        0xc build/cfg.o
+ .group         0x00000000        0xc build/cfg.o
+ .group         0x00000000        0xc build/cfg.o
+ .group         0x00000000        0xc build/cfg.o
+ .text          0x00000000        0x0 build/cfg.o
+ .data          0x00000000        0x0 build/cfg.o
+ .data.StaticPriorityQueueInfo
+                0x00000000       0x18 build/cfg.o
+ .debug_macro   0x00000000      0xad2 build/cfg.o
+ .debug_macro   0x00000000       0x46 build/cfg.o
+ .group         0x00000000        0xc build/os_internal.o
+ .group         0x00000000        0xc build/os_internal.o
+ .group         0x00000000        0xc build/os_internal.o
+ .group         0x00000000        0xc build/os_internal.o
+ .group         0x00000000        0xc build/os_internal.o
+ .text          0x00000000        0x0 build/os_internal.o
+ .data          0x00000000        0x0 build/os_internal.o
+ .text.Os_Task_CSAInit
+                0x00000000       0x16 build/os_internal.o
+ .text.Os_internal_enqueTaskInQueue
+                0x00000000       0x7c build/os_internal.o
+ .text.Os_internal_dequeTaskFromQueue
+                0x00000000       0x84 build/os_internal.o
+ .text.Os_internal_TaskDisapatcher
+                0x00000000       0x4c build/os_internal.o
+ .text.Os_ActivateTask
+                0x00000000       0x44 build/os_internal.o
+ .text.Os_TerminateTask
+                0x00000000       0x2c build/os_internal.o
+ .debug_macro   0x00000000      0xad2 build/os_internal.o
+ .debug_macro   0x00000000       0x46 build/os_internal.o
+ .debug_macro   0x00000000       0x22 build/os_internal.o
+ .debug_macro   0x00000000       0x40 build/os_internal.o
+ .data          0x00000000        0x4 build/startup.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x00000000         0x00100000         xr
+RAM              0x20000000         0x00008000         xrw
+RES_STACK        0x20008000         0x00000400         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD build/main.o
+LOAD build/cfg.o
+LOAD build/os_internal.o
+LOAD build/startup.o
+LOAD C:/NXP/MCUXpressoIDE_25.6.136/ide/tools/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v8-m.main+fp/hard\libc_nano.a
+LOAD C:/NXP/MCUXpressoIDE_25.6.136/ide/tools/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v8-m.main+fp/hard\libm.a
+
+.text           0x00000000      0x180
+ *(SORT_BY_ALIGNMENT(.vectors))
+ .vectors       0x00000000       0x94 build/startup.o
+                0x00000000                vector_table
+                0x00000040                Reset_Handler
+ *(SORT_BY_ALIGNMENT(.text*))
+ *fill*         0x00000094        0xc 
+ .text          0x000000a0       0x20 build/startup.o
+                0x000000a0                Svc_Handler
+                0x000000a2                PendSV_Handler
+                0x000000b0                SysTick_Handler
+                0x000000be                Default_Handler
+ .text.Task1    0x000000c0       0x24 build/main.o
+                0x000000c0                Task1
+ .text.Os_Systick_Init
+                0x000000e4       0x2c build/os_internal.o
+                0x000000e4                Os_Systick_Init
+ .text.Os_Init  0x00000110       0x24 build/os_internal.o
+                0x00000110                Os_Init
+ .text.main     0x00000134       0x10 build/main.o
+                0x00000134                main
+ .text.Os_Systick_Handler
+                0x00000144       0x1c build/os_internal.o
+                0x00000144                Os_Systick_Handler
+ .text.Os_UpdateR4
+                0x00000160        0x6 build/os_internal.o
+                0x00000160                Os_UpdateR4
+ *(SORT_BY_ALIGNMENT(.rodata*))
+ *fill*         0x00000166        0x2 
+ .rodata.StaticTaskInfo
+                0x00000168       0x18 build/cfg.o
+                0x00000168                StaticTaskInfo
+                0x00000180                        . = ALIGN (0x4)
+                0x00000180                        _etext = .
+
+.glue_7         0x00000180        0x0
+ .glue_7        0x00000180        0x0 linker stubs
+
+.glue_7t        0x00000180        0x0
+ .glue_7t       0x00000180        0x0 linker stubs
+
+.vfp11_veneer   0x00000180        0x0
+ .vfp11_veneer  0x00000180        0x0 linker stubs
+
+.v4_bx          0x00000180        0x0
+ .v4_bx         0x00000180        0x0 linker stubs
+
+.iplt           0x00000180        0x0
+ .iplt          0x00000180        0x0 build/main.o
+
+.rel.dyn        0x00000180        0x0
+ .rel.iplt      0x00000180        0x0 build/main.o
+
+.data           0x20000000        0x4 load address 0x00000180
+                0x20000000                        _sdata = .
+ *(SORT_BY_ALIGNMENT(.data*))
+ .data.DynamicTaskInfo
+                0x20000000        0x4 build/cfg.o
+                0x20000000                DynamicTaskInfo
+                0x20000004                        . = ALIGN (0x4)
+                0x20000004                        _edata = .
+                0x00000180                        _sidata = LOADADDR (.data)
+
+.igot.plt       0x20000004        0x0 load address 0x00000184
+ .igot.plt      0x20000004        0x0 build/main.o
+
+.bss            0x20000004       0x64 load address 0x00000184
+                0x20000004                        _sbss = .
+ *(SORT_BY_ALIGNMENT(.bss*))
+ .bss.Task1_EntryCounter
+                0x20000004        0x4 build/main.o
+                0x20000004                Task1_EntryCounter
+ .bss.Task2_EntryCounter
+                0x20000008        0x4 build/main.o
+                0x20000008                Task2_EntryCounter
+ .bss.Task1_Counter
+                0x2000000c        0x4 build/main.o
+                0x2000000c                Task1_Counter
+ .bss.Task2_Counter
+                0x20000010        0x4 build/main.o
+                0x20000010                Task2_Counter
+ .bss.ContextInfo
+                0x20000014       0x40 build/cfg.o
+                0x20000014                ContextInfo
+ .bss.Os_NextTaskInQueue
+                0x20000054       0x10 build/cfg.o
+                0x20000054                Os_NextTaskInQueue
+ .bss.Os_RunningDynamicTaskInfo
+                0x20000064        0x4 build/os_internal.o
+                0x20000064                Os_RunningDynamicTaskInfo
+ .bss           0x20000068        0x0 build/main.o
+ .bss           0x20000068        0x0 build/cfg.o
+ .bss           0x20000068        0x0 build/os_internal.o
+ .bss           0x20000068        0x0 build/startup.o
+ *(SORT_BY_ALIGNMENT(COMMON))
+                0x20000068                        . = ALIGN (0x4)
+                0x20000068                        _ebss = .
+
+._stack         0x20000068      0x800 load address 0x00000188
+                0x20000868                        . = (. + 0x800)
+ *fill*         0x20000068      0x800 
+                0x20008400                        _estack = (ORIGIN (RES_STACK) + LENGTH (RES_STACK))
+                0x20000000                        _estack_start = ORIGIN (RAM)
+                0x00000400                        _estack_len = 0x400
+OUTPUT(build/mini-os.elf elf32-littlearm)
+LOAD linker stubs
+
+.debug_info     0x00000000      0x892
+ .debug_info    0x00000000      0x109 build/main.o
+ .debug_info    0x00000109      0x2b5 build/cfg.o
+ .debug_info    0x000003be      0x4b0 build/os_internal.o
+ .debug_info    0x0000086e       0x24 build/startup.o
+
+.debug_abbrev   0x00000000      0x31c
+ .debug_abbrev  0x00000000       0x97 build/main.o
+ .debug_abbrev  0x00000097       0xc3 build/cfg.o
+ .debug_abbrev  0x0000015a      0x1ae build/os_internal.o
+ .debug_abbrev  0x00000308       0x14 build/startup.o
+
+.debug_aranges  0x00000000       0xd0
+ .debug_aranges
+                0x00000000       0x30 build/main.o
+ .debug_aranges
+                0x00000030       0x18 build/cfg.o
+ .debug_aranges
+                0x00000048       0x68 build/os_internal.o
+ .debug_aranges
+                0x000000b0       0x20 build/startup.o
+
+.debug_rnglists
+                0x00000000       0x69
+ .debug_rnglists
+                0x00000000       0x1f build/main.o
+ .debug_rnglists
+                0x0000001f       0x4a build/os_internal.o
+
+.debug_macro    0x00000000     0x1927
+ .debug_macro   0x00000000      0x12b build/main.o
+ .debug_macro   0x0000012b      0xad2 build/main.o
+ .debug_macro   0x00000bfd       0x22 build/main.o
+ .debug_macro   0x00000c1f       0x75 build/main.o
+ .debug_macro   0x00000c94       0x2a build/main.o
+ .debug_macro   0x00000cbe       0x5c build/main.o
+ .debug_macro   0x00000d1a       0x3c build/main.o
+ .debug_macro   0x00000d56       0x34 build/main.o
+ .debug_macro   0x00000d8a       0x16 build/main.o
+ .debug_macro   0x00000da0       0x57 build/main.o
+ .debug_macro   0x00000df7       0x9e build/main.o
+ .debug_macro   0x00000e95      0x364 build/main.o
+ .debug_macro   0x000011f9      0x112 build/main.o
+ .debug_macro   0x0000130b       0x10 build/main.o
+ .debug_macro   0x0000131b       0x16 build/main.o
+ .debug_macro   0x00001331       0x4a build/main.o
+ .debug_macro   0x0000137b       0x34 build/main.o
+ .debug_macro   0x000013af       0x10 build/main.o
+ .debug_macro   0x000013bf       0x58 build/main.o
+ .debug_macro   0x00001417      0x1e5 build/main.o
+ .debug_macro   0x000015fc       0x16 build/main.o
+ .debug_macro   0x00001612       0x16 build/main.o
+ .debug_macro   0x00001628      0x12a build/main.o
+ .debug_macro   0x00001752       0x46 build/main.o
+ .debug_macro   0x00001798       0x22 build/main.o
+ .debug_macro   0x000017ba       0x40 build/main.o
+ .debug_macro   0x000017fa       0x48 build/cfg.o
+ .debug_macro   0x00001842       0x10 build/cfg.o
+ .debug_macro   0x00001852       0x22 build/cfg.o
+ .debug_macro   0x00001874       0x40 build/cfg.o
+ .debug_macro   0x000018b4       0x57 build/os_internal.o
+ .debug_macro   0x0000190b       0x1c build/os_internal.o
+
+.debug_line     0x00000000      0x543
+ .debug_line    0x00000000      0x28f build/main.o
+ .debug_line    0x0000028f       0x61 build/cfg.o
+ .debug_line    0x000002f0      0x201 build/os_internal.o
+ .debug_line    0x000004f1       0x52 build/startup.o
+
+.debug_str      0x00000000     0x6a4d
+ .debug_str     0x00000000     0x6a4d build/main.o
+                               0x67bc (size before relaxing)
+ .debug_str     0x00006a4d     0x324a build/cfg.o
+ .debug_str     0x00006a4d     0x3422 build/os_internal.o
+ .debug_str     0x00006a4d       0x42 build/startup.o
+
+.comment        0x00000000       0x45
+ .comment       0x00000000       0x45 build/main.o
+                                 0x46 (size before relaxing)
+ .comment       0x00000045       0x46 build/cfg.o
+ .comment       0x00000045       0x46 build/os_internal.o
+
+.ARM.attributes
+                0x00000000       0x38
+ .ARM.attributes
+                0x00000000       0x3a build/main.o
+ .ARM.attributes
+                0x0000003a       0x3a build/cfg.o
+ .ARM.attributes
+                0x00000074       0x3a build/os_internal.o
+ .ARM.attributes
+                0x000000ae       0x28 build/startup.o
+
+.debug_frame    0x00000000      0x1b0
+ .debug_frame   0x00000000       0x5c build/main.o
+ .debug_frame   0x0000005c      0x154 build/os_internal.o
+
+.debug_line_str
+                0x00000000       0x34
+ .debug_line_str
+                0x00000000       0x34 build/startup.o
+
+Cross Reference Table
+
+Symbol                                            File
+ContextInfo                                       build/cfg.o
+Default_Handler                                   build/startup.o
+DynamicTaskInfo                                   build/cfg.o
+Os_ActivateTask                                   build/os_internal.o
+Os_CurrentPriority                                build/os_internal.o
+Os_Init                                           build/os_internal.o
+                                                  build/main.o
+Os_NextTaskInQueue                                build/cfg.o
+Os_RunningDynamicTaskInfo                         build/os_internal.o
+Os_Systick_Handler                                build/os_internal.o
+                                                  build/startup.o
+Os_Systick_Init                                   build/os_internal.o
+Os_Task_CSAInit                                   build/os_internal.o
+Os_TerminateTask                                  build/os_internal.o
+Os_UpdateR4                                       build/os_internal.o
+Os_internal_TaskDisapatcher                       build/os_internal.o
+Os_internal_dequeTaskFromQueue                    build/os_internal.o
+Os_internal_enqueTaskInQueue                      build/os_internal.o
+PendSV_Handler                                    build/startup.o
+Reset_Handler                                     build/startup.o
+StaticPriorityQueueInfo                           build/cfg.o
+                                                  build/os_internal.o
+StaticTaskInfo                                    build/cfg.o
+                                                  build/os_internal.o
+Svc_Handler                                       build/startup.o
+SysTick_Handler                                   build/startup.o
+Task1                                             build/main.o
+Task1_Counter                                     build/main.o
+Task1_EntryCounter                                build/main.o
+Task2                                             build/main.o
+Task2_Counter                                     build/main.o
+Task2_EntryCounter                                build/main.o
+_ebss                                             build/startup.o
+_estack                                           build/startup.o
+_estack_len                                       build/startup.o
+_estack_start                                     build/startup.o
+_sbss                                             build/startup.o
+main                                              build/main.o
+                                                  build/startup.o
+systick_counter                                   build/startup.o
+vector_table                                      build/startup.o
