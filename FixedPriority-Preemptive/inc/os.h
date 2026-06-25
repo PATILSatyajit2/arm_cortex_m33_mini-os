@@ -16,10 +16,11 @@
 #define OS_SYSTICK_5s           OS_SYSTICK_1ms*5000
 #define OS_SYSTICK_10s           OS_SYSTICK_1ms*10000
 
-#define OS_M_DISABLEFPU()   do{\
-                                OS_CPACR = 0x0;\
-                            }while(0);
+#define OS_M_KERNEL_PANIC()   do{}while(1);
 
+#define OS_M_UPDATEGLOBALCONTEXT(ptr)  do{\
+                                         Os_GlobalContext = ptr;\
+                                       }while(0);
 /******************************************************************************/
 
 // typedef stag_StaticISRInfo StaticISRInfo;
@@ -27,14 +28,23 @@
 typedef struct
 {
   t_taskState taskState;
+  t_taskID taskID;
   uint8 currentActivationCount;
 }DynamicTaskInfoType;
 
 typedef struct
 {
+  uint32* startAdd;
+  uint32* endAdd;
+}StaticStackInfoType;
+
+typedef struct
+{
   DynamicTaskInfoType* dynamicTaskInfo;
   Context_TypeInfo* context;
+  void (*task_func)(void);
   t_taskID taskID;
+  uint8 stackIndex;
   uint8 priority;
   uint8 maxActivation;
 }StaticTaskInfoType;
@@ -49,23 +59,25 @@ typedef struct
 
 /******************************************************************************/
 extern uint8 Os_CurrentPriority;
-DynamicTaskInfoType* Os_RunningDynamicTaskInfo;
+extern Context_TypeInfo* Os_GlobalContext;
 /******************************************************************************/
 
 extern void Os_Init(void);
 extern void Os_Systick_Init(void);
 extern void Os_Systick_Handler(void);
+extern void Os_PendSV_Handler(void);
 extern void Os_UpdateR4(uint32 val);
 extern void Os_Task_CSAInit(uint32* Stack_frame, void (*task_func)(void));
-extern void Os_ActivateTask(uint8 taskId);
+extern Os_StatusType Os_ActivateTask(uint8 taskId);
 
 /******************************************************************************/
 
 /* Extern declaration of DynamicTaskInfoType to hold next task info */
 extern DynamicTaskInfoType* Os_NextTaskInQueue[OS_MAX_TASK_ACTIVATION];
-extern StaticPriorityQueueInfoType StaticPriorityQueueInfo[OS_UNIQUE_PRIORITIES];
 extern DynamicTaskInfoType DynamicTaskInfo[OS_TASK_COUNT] ;
+extern StaticPriorityQueueInfoType StaticPriorityQueueInfo[OS_UNIQUE_PRIORITIES];
 extern const StaticTaskInfoType StaticTaskInfo[OS_TASK_COUNT];
+extern const StaticStackInfoType StaticStackInfo[OS_TASK_COUNT];
 
 /******************************************************************************/
 #endif

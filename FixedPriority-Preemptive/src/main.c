@@ -8,6 +8,8 @@ uint32 Task1_Counter;
 uint32 Task2_Counter;
 
 /******************************************************************************/
+void Task1();
+
 void Task1()
 {
   ++Task1_EntryCounter;
@@ -29,7 +31,7 @@ void Task2()
 int main(void)
 {
   Os_Init();
-  Task1();
+  // Task1();
   while(1)
   {
   }

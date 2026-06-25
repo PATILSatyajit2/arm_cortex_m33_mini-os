@@ -37,6 +37,18 @@ StaticPriorityQueueInfoType StaticPriorityQueueInfo[OS_UNIQUE_PRIORITIES] =
 /* Array of type DynamicTaskInfoType to hold next task info */
 DynamicTaskInfoType* Os_NextTaskInQueue[OS_MAX_TASK_ACTIVATION];
 
+uint32 stack[OS_STACK_SIZE];
+
+const StaticStackInfoType StaticStackInfo[OS_TASK_COUNT] =
+{
+  {
+    &stack[0], &stack[63]
+  },
+  {
+    &stack[64], &stack[127]
+  }
+};
+
 /* Static Structure - Kast_DynamicTaskInfoType (Used as runtime storage */
 DynamicTaskInfoType DynamicTaskInfo[OS_TASK_COUNT] =
 {
@@ -44,12 +56,18 @@ DynamicTaskInfoType DynamicTaskInfo[OS_TASK_COUNT] =
     /* Default Task State : DNM */
     READY, 
     
+    /* Task ID */
+    0,
+    
     /* Current Activation Count : DNM */
-    0
+    0,
   },
   {
     /* Default Task State : DNM */
     READY, 
+    
+    /* Task ID */
+    1,
     
     /* Current Activation Count : DNM */
     0
@@ -65,11 +83,16 @@ const StaticTaskInfoType StaticTaskInfo[OS_TASK_COUNT] =
     
     &ContextInfo[0],
     
+    Task1,
+    
     /* Task ID */
     TASK_0,
     
-    /* Task Priority */
+    /* Stack index */
     0,
+    
+    /* Task Priority */
+    1,
     
     /* Task Activation Count */
     2
@@ -80,11 +103,16 @@ const StaticTaskInfoType StaticTaskInfo[OS_TASK_COUNT] =
     
     &ContextInfo[1],
     
+    NULL_PTR,
+    
     /* Task ID */
     TASK_1,
     
-    /* Task Priority */
+    /* Stack index */
     1,
+    
+    /* Task Priority */
+    2,
     
     /* Task Activation Count */
     2

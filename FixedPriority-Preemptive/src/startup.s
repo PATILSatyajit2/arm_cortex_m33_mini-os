@@ -4,7 +4,7 @@
     .thumb
     
     .global Reset_Handler
-    .global PendSV_Handler
+    .global Os_PendSV_Handler
     .global SysTick_Handler
     .global Svc_Handler
     .global Default_Handler
@@ -26,10 +26,10 @@ vector_table:
     .word   0
     .word   0
     .word   0
-    .word   Svc_Handler             /* 11: SVCall                        */
+    .word   Os_PendSV_Handler       /* 11: SVCall                        */
     .word   Default_Handler         /* 12: DebugMon                      */
     .word   0                       /* 13: reserved                      */
-    .word   PendSV_Handler          /* 14: PendSV  ← context switch      */
+    .word   Os_PendSV_Handler       /* 14: PendSV  ← context switch      */
     .word   Os_Systick_Handler      /* 15: SysTick ← OS tick             */
     /* Add peripheral IRQs here as needed */
     
@@ -61,15 +61,23 @@ bss_clear_loop:
 bss_zero_check:
     cmp r0, r1
     blt bss_clear_loop
+
+    ldr r0, =_sidata
+    ldr r1, =_sdata
+    ldr r2, =_edata
+    b   ram_copy_check
+ram_copy_loop:
+    ldr r3, [r0], #4
+    str r3, [r1], #4
+ram_copy_check:
+    cmp r1, r2
+    blt ram_copy_loop
     bl main
     
 .section .text
 .type Svc_Handler, %function
 Svc_Handler:
     BX  LR
-
-PendSV_Handler:
-    nop
     
 .align 4
 .section .data

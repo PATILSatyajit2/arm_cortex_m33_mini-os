@@ -1,3 +1,6 @@
+// #ifndef CFG_H
+// #define CFG_H
+
 // #include "global_definations.h"
 #include "os.h"
 
@@ -16,4 +19,9 @@
 /* Macro for Task1 identification */
 #define TASK_1                    1u
 
+#define OS_STACK_SIZE             64
+
 /******************************************************************************/
+extern void Task1();
+
+// #endif

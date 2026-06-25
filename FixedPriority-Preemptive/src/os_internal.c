@@ -1,10 +1,16 @@
 #include "os.h"
 
 /******************************************************************************/
-Os_StatusType Os_internal_enqueTaskInQueue(StaticTaskInfoType* ptr_StaticTaskInfo);
-Os_StatusType Os_internal_dequeTaskFromQueue(StaticTaskInfoType* ptr_StaticTaskInfo);
+Os_StatusType Os_internal_enqueTaskInQueue(const StaticTaskInfoType* ptr_StaticTaskInfo);
+Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_StaticTaskInfo);
+Os_StatusType Os_internal_TaskDispatcher(void);
 void Os_TerminateTask(uint8 taskId);
-void Os_ActivateTask(uint8 taskId);
+
+DynamicTaskInfoType* Os_RunningDynamicTaskInfo;
+Context_TypeInfo* Os_GlobalContext;
+uint8 Os_CurrentPriority;
+static uint8 Os_CallLevel;
+
 /******************************************************************************/
 
 #define OS_SYSTICK_DISABLE                    0x0u
@@ -23,11 +29,32 @@ void Os_Systick_Init(void)
                    OS_SYSTICK_PROCESSOR_CLK;
 }
 
+__attribute((__naked__)) void Os_PendSV_Handler(void)
+{
+  __asm volatile ( " ldr    r0, =Os_CallLevel       \n"
+                   " ldr    r0, [r0]                \n"
+                   " cmp    r0, #0                  \n"
+                   " beq    L_skilStore             \n"
+                   " stmia  r4, {r5-r11}            \n"
+                   " mrs    r0, msp                 \n"
+                   " str    r0, [r4, #28]           \n"
+                   "L_skilStore:                    \n"
+                   " ldr    r0, =Os_GlobalContext   \n"
+                   " ldr    r4, [r0]                \n"
+                   " ldmia  r4, {r5-r11}            \n"
+                   " ldr    r0, [r4, #28]           \n"
+                   " msr    msp, r0                 \n"
+                   " ldr    lr, =0xFFFFFFF9         \n"
+                   " bx     lr                        ");
+}
+
 __attribute((__naked__)) void Os_Systick_Handler(void)
 {
   __asm volatile ( " stmia  r4, {r5-r11}            \n"
                    " mrs    r0, msp                 \n"
                    " str    r0, [r4, #28]           \n"
+                   " mov    r0, #0                  \n"
+                   " bl     Os_ActivateTask         \n"
                    " ldmia  r4, {r5-r11}            \n"
                    " ldr    r0, [r4, #28]           \n"
                    " msr    msp, r0                 \n"
@@ -41,19 +68,25 @@ __attribute((__naked__)) void Os_UpdateR4(uint32 val)
                  " bx lr ");
 }
 
-void Os_Task_CSAInit(uint32* Stack_frame, void (*task_func)(void))
-{  // Stack_frame = Stack_frame - 8;
-  // Stack_frame[0] = 0;
-  // Stack_frame[1] = 1;
-  // Stack_frame[2] = 2;
-  // Stack_frame[3] = 3;
-  // Stack_frame[4] = 12;
-  // Stack_frame[5] = (uint32)&Os_TerminateTask;                     /* LR */
-  // Stack_frame[6] = (uint32)task_func;       /* PC */
-  // Stack_frame[7] = 0x01000000;              /* xPSR */
+void Os_internal_Task_CSAInit(const StaticTaskInfoType* ptr_StaticTaskInfo)
+{
+  StackFrame_Type* Stack_frame;
+  const StaticStackInfoType* StackInfo;
+  StackInfo = &StaticStackInfo[ptr_StaticTaskInfo->stackIndex];
+  
+  Stack_frame = (StackFrame_Type*)(StackInfo->endAdd - 8);
+  
+  Stack_frame->Register_R0 = 0;
+  Stack_frame->Register_R1 = 1;
+  Stack_frame->Register_R2 = 2;
+  Stack_frame->Register_R3 = 3;
+  Stack_frame->Register_R12 = 12;
+  Stack_frame->Register_R14 = (uint32)&Os_TerminateTask;                    /* LR */
+  Stack_frame->Register_R15 = (uint32)ptr_StaticTaskInfo->task_func;        /* PC */
+  Stack_frame->Register_XPSR = 0x01000000;                                  /* xPSR */
 
-  // Os_StaticTasks[Os_task_counter].context.Register_R13 =
-      // (uint32)Stack_frame;
+  ptr_StaticTaskInfo->context->Register_R13 =
+      (uint32)Stack_frame;
 }
 
 /******************************************************************************/
@@ -63,13 +96,16 @@ void Os_Init(void)
   OS_M_DISABLEFPU();
   
   /* Initialize Os dynamic variables */
-  Os_UpdateR4((uint32)&StaticTaskInfo[ZERO].context);
+  Os_UpdateR4((uint32)StaticTaskInfo[ZERO].context);
   
   /* Initialize Systick */
-  Os_Systick_Init();
+  // Os_Systick_Init();
+  
+  Os_CallLevel = 0;
+  Os_ActivateTask(0);
 }
 
-Os_StatusType Os_internal_enqueTaskInQueue(StaticTaskInfoType* ptr_StaticTaskInfo)
+Os_StatusType Os_internal_enqueTaskInQueue(const StaticTaskInfoType* ptr_StaticTaskInfo)
 {
   uint8 priority;
   StaticPriorityQueueInfoType* ptr_StaticPriorityQueueInfo;
@@ -102,19 +138,19 @@ Os_StatusType Os_internal_enqueTaskInQueue(StaticTaskInfoType* ptr_StaticTaskInf
   if(NULL_PTR == ptr_StaticPriorityQueueInfo->head)
   {
     /* Update head pointer with dynamic task info of requested task */
-    ptr_StaticPriorityQueueInfo->head = &(ptr_StaticTaskInfo->dynamicTaskInfo);
+    ptr_StaticPriorityQueueInfo->head = &ptr_StaticTaskInfo->dynamicTaskInfo;
     
     /* Set global priority level */
     Os_CurrentPriority |= priority;
   }
   
   /* TODO - below need to be updated ---> get a static parameter for roll over per priority */
-  writeIndex = (writeIndex + ONE)%2;
+  ptr_StaticPriorityQueueInfo->writeIndex = (writeIndex + ONE)%2;
   
   return ret;
 }
 
-Os_StatusType Os_internal_dequeTaskFromQueue(StaticTaskInfoType* ptr_StaticTaskInfo)
+Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_StaticTaskInfo)
 {
   /* Priority queue local pointer */
   StaticPriorityQueueInfoType* ptr_StaticPriorityQueueInfo;
@@ -160,9 +196,44 @@ Os_StatusType Os_internal_dequeTaskFromQueue(StaticTaskInfoType* ptr_StaticTaskI
   return ret;
 }
 
-Os_StatusType Os_internal_TaskDisapatcher(void)
+void Os_internal_updateQueue(void)
 {
-  StaticTaskInfoType* ptr_StaticTaskInfo;
+  /* Priority queue local pointer */
+  StaticPriorityQueueInfoType* ptr_StaticPriorityQueueInfo;
+  
+  uint8 priority;
+  uint8 readIndex;
+  
+  /* Get highest priority */
+  priority = OS_M_GETHIGHESTPRIORITY();
+  
+  /* Take local pointer to priority queue of requested task */
+  ptr_StaticPriorityQueueInfo = &StaticPriorityQueueInfo[priority];
+  
+  readIndex = ptr_StaticPriorityQueueInfo->readIndex;
+  
+  if(NULL_PTR != ptr_StaticPriorityQueueInfo->next[readIndex])
+  {
+    /* Current priority queue head pointer advancement */
+    ptr_StaticPriorityQueueInfo->head = 
+      &ptr_StaticPriorityQueueInfo->next[readIndex];
+      
+    /* TODO - below need to be updated ---> get a static parameter for roll over per priority */
+    readIndex = (readIndex + ONE)%2;
+    
+    /* Update the readIndex */
+    ptr_StaticPriorityQueueInfo->readIndex = readIndex;
+  }
+  else
+  {
+    /* Global priority bit mask clear */
+    Os_CurrentPriority |= priority;
+  }
+}
+
+Os_StatusType Os_internal_TaskDispatcher(void)
+{
+  const StaticTaskInfoType* ptr_StaticTaskInfo;
   DynamicTaskInfoType* ptr_DynamicTaskInfo;
   
   /* Priority queue local pointer */
@@ -174,27 +245,42 @@ Os_StatusType Os_internal_TaskDisapatcher(void)
   /* Return status */
   Os_StatusType ret;
   
-  ret = OK;
+  ret = SAVE_AND_LOAD_CONTEXT;
+  
+  priority = OS_M_GETHIGHESTPRIORITY();
   
   /* Take local pointer to priority queue of requested task */
   ptr_StaticPriorityQueueInfo = &StaticPriorityQueueInfo[priority];
   
-  if( (priority > Os_CurrentPriority) &&
-     NULL_PTR != ptr_StaticPriorityQueueInfo->head )
-  {
-    ptr_DynamicTaskInfo = *ptr_StaticPriorityQueueInfo->head;
-  }
+  ptr_DynamicTaskInfo = *ptr_StaticPriorityQueueInfo->head;
+  
+  /* Take pointer to static task info */
+  ptr_StaticTaskInfo = &StaticTaskInfo[ptr_DynamicTaskInfo->taskID];
+  
+  /* Initialize default context */
+  Os_internal_Task_CSAInit(ptr_StaticTaskInfo);
+  
+  /* Update task state */
+  ptr_DynamicTaskInfo->taskState = RUNNING;
+  
+  /* Update Running Task */
+  Os_RunningDynamicTaskInfo = ptr_DynamicTaskInfo;
+  
+  /* Update Global Context */
+  OS_M_UPDATEGLOBALCONTEXT(ptr_StaticTaskInfo->context);
+  
+  return ret;
 }
 
-void Os_ActivateTask(uint8 taskId)
+Os_StatusType Os_ActivateTask(uint8 taskId)
 {
-  StaticTaskInfoType* ptr_StaticTaskInfo;
+  const StaticTaskInfoType* ptr_StaticTaskInfo;
   DynamicTaskInfoType* ptr_DynamicTaskInfo;
   
   /* Return status */
   Os_StatusType ret;
   
-  ret = OK;
+  ret = N_OK;
   
   /* Take local pointer to static task info */
   ptr_StaticTaskInfo = &StaticTaskInfo[taskId];
@@ -209,18 +295,48 @@ void Os_ActivateTask(uint8 taskId)
       ptr_StaticTaskInfo->maxActivation)
   {
     /* Insert Task in Priority Queue */
-    if(OK == Os_internal_enqueTaskInQueue(ptr_StaticTaskInfo))
+    ret = Os_internal_enqueTaskInQueue(ptr_StaticTaskInfo);
+    
+    if(OK == ret)
     {
+      /* Call task dispatcher */
+      Os_internal_TaskDispatcher();
       
+      /* Invoke pendsv */
+      OS_M_SYSCALL_PENDSV();
+      __asm("svc #0");
     }
   }
-  else
-  {
-    return;
-  }
+  
+  return ret;
 }
 
 void Os_TerminateTask(uint8 taskId)
 {
-  Os_internal_dequeTaskFromQueue(&StaticTaskInfo[taskId]);
+  const StaticTaskInfoType* ptr_StaticTaskInfo;
+  DynamicTaskInfoType* ptr_DynamicTaskInfo;
+  
+  /* Take pointer to static task info */
+  ptr_StaticTaskInfo = &StaticTaskInfo[taskId];
+  
+  /* Take pointer to dynamic task info */
+  ptr_DynamicTaskInfo = ptr_StaticTaskInfo->dynamicTaskInfo;;
+  
+  /* Update Task state */
+  ptr_DynamicTaskInfo->taskState = SUSPENDED;
+  
+  /* Deque task from queue */
+  Os_internal_dequeTaskFromQueue(ptr_StaticTaskInfo);
+  
+  /* Update the queue */
+  Os_internal_updateQueue();
+  
+  /* Dispatch task */
+  Os_internal_TaskDispatcher();
+  
+  /* Invoke pendsv */
+  OS_M_SYSCALL_PENDSV();
+  
+  /* Execution should not come here */
+  OS_M_KERNEL_PANIC();
 }
