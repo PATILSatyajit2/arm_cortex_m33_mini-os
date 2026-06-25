@@ -13,10 +13,11 @@ void Task1();
 void Task1()
 {
   ++Task1_EntryCounter;
-  while(1)
-  {
+//  while(1)
+//  {
+  Os_ActivateTask(1);
     ++Task1_Counter;
-  }
+//  }
 }
 
 void Task2()

@@ -16,7 +16,10 @@ StaticPriorityQueueInfoType StaticPriorityQueueInfo[OS_UNIQUE_PRIORITIES] =
     0,
     
     /* Write index */
-    0
+    0,
+
+    /* Count of total tasks activations */
+    2
   },
   /* Priority Level 1 */
   {
@@ -30,7 +33,10 @@ StaticPriorityQueueInfoType StaticPriorityQueueInfo[OS_UNIQUE_PRIORITIES] =
     0,
     
     /* Write index */
-    0
+    0,
+
+    /* Count of total tasks activations */
+    2
   },
 };
 
@@ -92,7 +98,7 @@ const StaticTaskInfoType StaticTaskInfo[OS_TASK_COUNT] =
     0,
     
     /* Task Priority */
-    1,
+    0,
     
     /* Task Activation Count */
     2
@@ -112,7 +118,7 @@ const StaticTaskInfoType StaticTaskInfo[OS_TASK_COUNT] =
     1,
     
     /* Task Priority */
-    2,
+    1,
     
     /* Task Activation Count */
     2

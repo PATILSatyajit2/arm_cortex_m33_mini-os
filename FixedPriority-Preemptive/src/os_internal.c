@@ -68,6 +68,18 @@ __attribute((__naked__)) void Os_UpdateR4(uint32 val)
                  " bx lr ");
 }
 
+uint32 Os_CheckLeadingZeros(uint32 val)
+{
+    uint32 result;
+
+    __asm volatile(
+        "clz %0, %1"
+        : "=r"(result)
+        : "r"(val));
+
+    return 32U - result;
+}
+
 void Os_internal_Task_CSAInit(const StaticTaskInfoType* ptr_StaticTaskInfo)
 {
   StackFrame_Type* Stack_frame;
@@ -143,9 +155,10 @@ Os_StatusType Os_internal_enqueTaskInQueue(const StaticTaskInfoType* ptr_StaticT
     /* Set global priority level */
     Os_CurrentPriority |= priority;
   }
-  
-  /* TODO - below need to be updated ---> get a static parameter for roll over per priority */
-  ptr_StaticPriorityQueueInfo->writeIndex = (writeIndex + ONE)%2;
+ 
+  /* Write index update */
+  ptr_StaticPriorityQueueInfo->writeIndex = (writeIndex + ONE) % 
+    ptr_StaticPriorityQueueInfo->maxActivation;
   
   return ret;
 }
@@ -174,8 +187,8 @@ Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_Stati
   
   readIndex = ptr_StaticPriorityQueueInfo->readIndex;
   
-  /* TODO - below need to be updated ---> get a static parameter for roll over per priority */
-  readIndex = (readIndex + ONE)%2;
+  /* Read index roll over */
+  readIndex = (readIndex + ONE) % ptr_StaticPriorityQueueInfo->maxActivation;
   
   ptr_StaticPriorityQueueInfo->readIndex = readIndex;
   
