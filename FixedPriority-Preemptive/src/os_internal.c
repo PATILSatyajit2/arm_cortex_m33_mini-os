@@ -4,7 +4,7 @@
 Os_StatusType Os_internal_enqueTaskInQueue(const StaticTaskInfoType* ptr_StaticTaskInfo);
 Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_StaticTaskInfo);
 Os_StatusType Os_internal_TaskDispatcher(void);
-void Os_TerminateTask(uint8 taskId);
+void Os_TerminateTask(void);
 
 DynamicTaskInfoType* Os_RunningDynamicTaskInfo;
 Context_TypeInfo* Os_GlobalContext;
@@ -32,7 +32,7 @@ void Os_Systick_Init(void)
 __attribute((__naked__)) void Os_PendSV_Handler(void)
 {
   __asm volatile ( " ldr    r0, =Os_CallLevel       \n"
-                   " ldr    r0, [r0]                \n"
+                   " ldrb    r0, [r0]               \n"
                    " cmp    r0, #0                  \n"
                    " beq    L_skilStore             \n"
                    " stmia  r4, {r5-r11}            \n"
@@ -103,18 +103,58 @@ void Os_internal_Task_CSAInit(const StaticTaskInfoType* ptr_StaticTaskInfo)
 
 /******************************************************************************/
 
+void Os_idleTask(void)
+{
+  while (1);
+}
+
 void Os_Init(void)
 {
+  const StaticTaskInfoType* ptr_StaticTaskInfo;
+
+  #if(ZERO < OS_AUTOSTART_TASK_COUNT)
+  uint8 count;
+  #endif
+
+  /* Disable FPU */
   OS_M_DISABLEFPU();
+
+  /* Take pointer to static task info of idle task */
+  ptr_StaticTaskInfo = &StaticTaskInfo[ZERO];
   
+  /* Initialize idle task task */
+  OS_M_TASK_PUSH_TO_QUEUE(ptr_StaticTaskInfo);
+
   /* Initialize Os dynamic variables */
-  Os_UpdateR4((uint32)StaticTaskInfo[ZERO].context);
+  Os_UpdateR4((uint32)ptr_StaticTaskInfo->context);
   
+  #if(ZERO < OS_AUTOSTART_TASK_COUNT)
+    count = 0;
+
+    /* Enable autostart tasks */
+    do
+    {
+      /* Take pointer to autostart task static info */
+      ptr_StaticTaskInfo = &StaticTaskInfo[StaticAutostartTaskInfo[count]];
+
+      /* Push task in queue */
+      OS_M_TASK_PUSH_TO_QUEUE(ptr_StaticTaskInfo);
+
+      /* Increment the count */
+      count = count + ONE;
+    } while (count < OS_AUTOSTART_TASK_COUNT);
+  #endif
+
+  /* Set global call level --> Initial Value */
+  Os_CallLevel = OS_LOAD_CONTEXT;
+
   /* Initialize Systick */
   // Os_Systick_Init();
-  
-  Os_CallLevel = 0;
-  Os_ActivateTask(0);
+
+  /* Load task context Task */
+  OS_M_SWITCH_TASK_CONTEXT();
+
+  OS_M_KERNEL_PANIC();
 }
 
 Os_StatusType Os_internal_enqueTaskInQueue(const StaticTaskInfoType* ptr_StaticTaskInfo)
@@ -185,11 +225,16 @@ Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_Stati
   /* Take local pointer to priority queue of requested task */
   ptr_StaticPriorityQueueInfo = &StaticPriorityQueueInfo[priority];
   
+  /* Get the read index */
   readIndex = ptr_StaticPriorityQueueInfo->readIndex;
-  
+
+  /* Make the current entry as NULL */
+  ptr_StaticPriorityQueueInfo->next[readIndex] = NULL_PTR;
+
   /* Read index roll over */
   readIndex = (readIndex + ONE) % ptr_StaticPriorityQueueInfo->maxActivation;
   
+  /* Update the read index */
   ptr_StaticPriorityQueueInfo->readIndex = readIndex;
   
   if(NULL_PTR != ptr_StaticPriorityQueueInfo->next[readIndex])
@@ -203,7 +248,7 @@ Os_StatusType Os_internal_dequeTaskFromQueue(const StaticTaskInfoType* ptr_Stati
     ptr_StaticPriorityQueueInfo->head = NULL_PTR;
     
     /* Clear the global priority */
-    Os_CurrentPriority |= priority;
+    Os_CurrentPriority &= (~priority);
   }
   
   return ret;
@@ -218,7 +263,7 @@ void Os_internal_updateQueue(void)
   uint8 readIndex;
   
   /* Get highest priority */
-  priority = OS_M_GETHIGHESTPRIORITY();
+  priority = OS_M_GETHIGHESTPRIORITY(Os_CurrentPriority);
   
   /* Take local pointer to priority queue of requested task */
   ptr_StaticPriorityQueueInfo = &StaticPriorityQueueInfo[priority];
@@ -260,7 +305,7 @@ Os_StatusType Os_internal_TaskDispatcher(void)
   
   ret = SAVE_AND_LOAD_CONTEXT;
   
-  priority = OS_M_GETHIGHESTPRIORITY();
+  priority = OS_M_GETHIGHESTPRIORITY(Os_CurrentPriority);
   
   /* Take local pointer to priority queue of requested task */
   ptr_StaticPriorityQueueInfo = &StaticPriorityQueueInfo[priority];
@@ -271,7 +316,10 @@ Os_StatusType Os_internal_TaskDispatcher(void)
   ptr_StaticTaskInfo = &StaticTaskInfo[ptr_DynamicTaskInfo->taskID];
   
   /* Initialize default context */
-  Os_internal_Task_CSAInit(ptr_StaticTaskInfo);
+  if(READY != ptr_DynamicTaskInfo->taskState)
+  {
+    Os_internal_Task_CSAInit(ptr_StaticTaskInfo);
+  }
   
   /* Update task state */
   ptr_DynamicTaskInfo->taskState = RUNNING;
@@ -312,8 +360,18 @@ Os_StatusType Os_ActivateTask(uint8 taskId)
     
     if(OK == ret)
     {
+      /* Upadate state of running task as READY */
+      Os_RunningDynamicTaskInfo->taskState = READY;
+
+      /* Increment the activation count */
+      ptr_DynamicTaskInfo->currentActivationCount = 
+        ptr_DynamicTaskInfo->currentActivationCount + ONE;
+      
       /* Call task dispatcher */
       Os_internal_TaskDispatcher();
+     
+      /* Update global call level to save and load context */
+      Os_CallLevel = OS_SAVE_LOAD_CONTEXT;
       
       /* Invoke pendsv */
       OS_M_SYSCALL_PENDSV();
@@ -324,17 +382,21 @@ Os_StatusType Os_ActivateTask(uint8 taskId)
   return ret;
 }
 
-void Os_TerminateTask(uint8 taskId)
+void Os_TerminateTask(void)
 {
   const StaticTaskInfoType* ptr_StaticTaskInfo;
   DynamicTaskInfoType* ptr_DynamicTaskInfo;
-  
-  /* Take pointer to static task info */
-  ptr_StaticTaskInfo = &StaticTaskInfo[taskId];
+  uint8 taskID;
   
   /* Take pointer to dynamic task info */
-  ptr_DynamicTaskInfo = ptr_StaticTaskInfo->dynamicTaskInfo;;
-  
+  ptr_DynamicTaskInfo = Os_RunningDynamicTaskInfo;
+
+  /* Get taskID */
+  taskID = ptr_DynamicTaskInfo->taskID;
+
+  /* Take pointer to static task info */
+  ptr_StaticTaskInfo = &StaticTaskInfo[taskID];
+    
   /* Update Task state */
   ptr_DynamicTaskInfo->taskState = SUSPENDED;
   
@@ -342,13 +404,17 @@ void Os_TerminateTask(uint8 taskId)
   Os_internal_dequeTaskFromQueue(ptr_StaticTaskInfo);
   
   /* Update the queue */
-  Os_internal_updateQueue();
+  // Os_internal_updateQueue();
   
   /* Dispatch task */
   Os_internal_TaskDispatcher();
-  
+
+  /* Update global call level to load context */
+  Os_CallLevel = OS_LOAD_CONTEXT;
+
   /* Invoke pendsv */
   OS_M_SYSCALL_PENDSV();
+  __asm("svc #0");
   
   /* Execution should not come here */
   OS_M_KERNEL_PANIC();

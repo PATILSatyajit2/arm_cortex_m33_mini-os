@@ -20,7 +20,7 @@
                                 OS_CPACR = 0x0;\
                             }while(0);
 
-#define OS_M_GETHIGHESTPRIORITY()     1
+#define OS_M_GETHIGHESTPRIORITY(val)     Os_CheckLeadingZeros(val)
 
 #define OS_M_SYSCALL_PENDSV()   do{\
                                   __asm("cpsie i");\

@@ -6,6 +6,10 @@
 #define NULL_PTR                                  ((void *)0)
 #define ZERO                                      0u
 #define ONE                                       1u
+
+#define OS_SAVE_LOAD_CONTEXT                      1u
+#define OS_LOAD_CONTEXT                           0u
+
 /******************************************************************************/
 
 typedef unsigned int uint32;
@@ -20,6 +24,7 @@ typedef enum
 {
   SUSPENDED = 0,
   READY,
+  READY_AND_INIT,
   WAIT,
   RUNNING
 }t_taskState;
